@@ -174,7 +174,7 @@ function eatFly(fly) {
   // Every 10 flies: next level, and here comes the bat!
   if (score % FLIES_PER_LEVEL === 0) {
     level = level + 1;
-    document.getElementById("info").innerHTML = `<b>Level ${level}!</b> <b>A bat is coming!</b> Survive 10 seconds.`;
+    document.getElementById("info").innerHTML = `<b>Level ${level}!</b> <b>A bat is coming!</b> Survive ${BAT_CHASE_TIME} seconds.`;
     soundLevelUp();
     spawnBat();
     soundBat();
@@ -396,6 +396,7 @@ function heartbeat() {
 
 // Listen for the keyboard
 document.addEventListener("keydown", (event) => {
+  if (settingsMenu.open) return;  // typing in the Advanced menu: don't steer the gecko
   startAudio();                   // the first key press switches sound on
 
   // M: sound on or off (works any time)
@@ -476,6 +477,87 @@ document.getElementById("sound").addEventListener("click", (event) => {
 document.getElementById("pause").addEventListener("click", (event) => {
   event.currentTarget.blur();
   togglePause();
+});
+
+// =====================================================
+//  THE ADVANCED MENU
+//  Lets you change some of the settings from constants.js
+//  while playing. Each one knows how to read (get) and
+//  change (set) its setting. "scale" shows a number in
+//  nicer units, like 0.7 as 70%.
+// =====================================================
+
+const SETTINGS = [
+  { label: "Max gecko speed", hint: "ms between moves at its fastest (smaller = faster)", min: 20, max: 500, step: 5,
+    get: () => FASTEST_SPEED, set: (value) => FASTEST_SPEED = value },
+  { label: "Start gecko speed", hint: "ms between moves at the start (smaller = faster)", min: 20, max: 500, step: 5,
+    get: () => START_SPEED, set: (value) => START_SPEED = value },
+  { label: "Speed up per fly", hint: "ms faster for every fly eaten", min: 0, max: 20, step: 0.5,
+    get: () => SPEED_UP_PER_FLY, set: (value) => SPEED_UP_PER_FLY = value },
+  { label: "Max bat speed", hint: "% of the gecko's speed at its fastest", min: 0, max: 200, step: 5, scale: 100,
+    get: () => BAT_MAX_RATIO, set: (value) => BAT_MAX_RATIO = value },
+  { label: "Start bat speed", hint: "% of the gecko's speed on level 2", min: 0, max: 200, step: 5, scale: 100,
+    get: () => BAT_START_RATIO, set: (value) => BAT_START_RATIO = value },
+  { label: "Bat chase time", hint: "seconds the bat chases you", min: 1, max: 60, step: 1,
+    get: () => BAT_CHASE_TIME, set: (value) => BAT_CHASE_TIME = value },
+  { label: "Flies per level", hint: "flies to eat before the next level (and bat)", min: 1, max: 50, step: 1,
+    get: () => FLIES_PER_LEVEL, set: (value) => FLIES_PER_LEVEL = value },
+  { label: "Max flies", hint: "flies buzzing around at once", min: 1, max: 20, step: 1,
+    get: () => MAX_FLIES, set: (value) => MAX_FLIES = value },
+  { label: "Start fly speed", hint: "pixels per second on level 1", min: 0, max: 300, step: 5,
+    get: () => FLY_SPEED, set: (value) => FLY_SPEED = value },
+  { label: "Max fly speed", hint: "pixels per second at the fastest", min: 0, max: 300, step: 5,
+    get: () => FLY_MAX_SPEED, set: (value) => FLY_MAX_SPEED = value },
+];
+const DEFAULTS = SETTINGS.map((setting) => setting.get());   // remember the normal values for "Reset to normal"
+
+const settingsMenu = document.getElementById("settings");
+const settingsList = document.getElementById("settings-list");
+let pausedForMenu = false;   // did opening the menu pause the game? then closing it un-pauses
+
+// Make one row (label + number box) for every setting
+SETTINGS.forEach((setting, i) => {
+  const scale = setting.scale || 1;
+  const row = document.createElement("div");
+  row.className = "setting";
+  row.innerHTML = `<label for="setting-${i}">${setting.label}<small>${setting.hint}</small></label>
+    <input type="number" id="setting-${i}" min="${setting.min}" max="${setting.max}" step="${setting.step}">`;
+  const input = row.querySelector("input");
+  input.addEventListener("input", () => {
+    const value = Number(input.value);
+    if (input.value === "" || Number.isNaN(value)) return;                   // half-typed: wait
+    const safe = Math.min(Math.max(value, setting.min), setting.max);      // keep it between min and max
+    setting.set(safe / scale);
+  });
+  input.addEventListener("change", () => showSettings());   // when you leave the box, show the value really used
+  settingsList.appendChild(row);
+});
+
+// Put the current values into the number boxes
+function showSettings() {
+  SETTINGS.forEach((setting, i) => {
+    const scale = setting.scale || 1;
+    document.getElementById(`setting-${i}`).value = Math.round(setting.get() * scale * 100) / 100;
+  });
+}
+
+document.getElementById("advanced").addEventListener("click", (event) => {
+  event.currentTarget.blur();
+  pausedForMenu = started && !gameOver && !paused;
+  if (pausedForMenu) togglePause();
+  showSettings();
+  settingsMenu.showModal();
+});
+
+document.getElementById("settings-reset").addEventListener("click", () => {
+  SETTINGS.forEach((setting, i) => setting.set(DEFAULTS[i]));
+  showSettings();
+});
+
+// "Done", or the Escape key: close the menu and keep playing
+settingsMenu.addEventListener("close", () => {
+  if (pausedForMenu && paused) togglePause();
+  pausedForMenu = false;
 });
 
 // =====================================================

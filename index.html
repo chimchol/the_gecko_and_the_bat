@@ -42,12 +42,27 @@
   .stat span { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
   .stat b { font-family: var(--font-display); font-size: 16px; color: var(--accent); font-variant-numeric: tabular-nums; }
   .bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-  .info { flex: 1; min-width: 0; background: var(--panel); border-radius: 6px; padding: 12px 14px; color: var(--muted); line-height: 1.5; }
+  /* The message gets its own row, always at least 2 lines tall, so new messages don't make the page jump */
+  .info { flex: 1 1 100%; min-width: 0; min-height: 3em; background: var(--panel); border-radius: 6px; padding: 12px 14px; color: var(--muted); line-height: 1.5; }
   .info b { color: var(--text); }
   button { font-family: var(--font-display); font-size: 10px; background: var(--accent); color: #142008;
            border: 0; border-radius: 6px; padding: 14px 16px; cursor: pointer; }
   button.secondary { background: var(--panel); color: var(--text); box-shadow: inset 0 0 0 2px var(--muted); }
   button:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
+  /* The Advanced settings menu */
+  dialog { background: var(--panel); color: var(--text); border: 0; border-radius: 8px; padding: 20px;
+           width: min(440px, calc(100vw - 32px)); box-sizing: border-box; max-height: calc(100dvh - 32px);
+           box-shadow: 0 0 0 4px #6b4a2b, 0 0 0 7px #3d2a17; }
+  dialog::backdrop { background: rgb(0 0 0 / 0.6); }
+  dialog h2 { font-family: var(--font-display); font-size: 14px; color: var(--accent); margin: 0 0 8px; }
+  dialog .note { color: var(--muted); margin: 0 0 16px; }
+  .setting { display: flex; align-items: center; gap: 12px; padding-block: 8px; border-top: 1px solid #3d2a17; }
+  .setting label { flex: 1; min-width: 0; }
+  .setting small { display: block; color: var(--muted); font-size: 13px; }
+  .setting input { width: 84px; font: inherit; font-variant-numeric: tabular-nums; padding: 6px 8px;
+                   background: var(--bg); color: var(--text); border: 2px solid var(--muted); border-radius: 6px; }
+  .setting input:focus { outline: none; border-color: var(--accent); }
+  dialog .bar { margin-top: 16px; justify-content: flex-end; }
 </style>
 </head>
 <body>
@@ -70,9 +85,22 @@
     <div class="info" id="info">Press an <b>arrow key</b> to start.</div>
     <button id="pause" class="secondary">Pause</button>
     <button id="sound" class="secondary">Sound: on</button>
+    <button id="advanced" class="secondary">Advanced</button>
     <button id="restart">Restart</button>
   </div>
 </main>
+
+<dialog id="settings">
+  <form method="dialog">
+    <h2>Advanced</h2>
+    <p class="note">Change how the game plays. Changes work right away.</p>
+    <div id="settings-list"></div>
+    <div class="bar">
+      <button type="button" id="settings-reset" class="secondary">Reset to normal</button>
+      <button>Done</button>
+    </div>
+  </form>
+</dialog>
 
 <script src="constants.js"></script>
 <script src="drawing.js"></script>
